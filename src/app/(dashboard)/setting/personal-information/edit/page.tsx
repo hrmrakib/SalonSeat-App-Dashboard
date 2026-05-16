@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import type React from "react";
@@ -115,7 +116,7 @@ export default function PersonalInformationEditPage() {
             <div className='mb-6 text-primary'>
               <Link
                 href='/setting/personal-information'
-                className='inline-flex items-center hover:text-teal-700'
+                className='inline-flex items-center hover:text-[#119DAA]'
               >
                 <ArrowLeft className='mr-2 h-6 w-6' />
                 <span className='text-2xl font-semibold'>
@@ -203,22 +204,6 @@ export default function PersonalInformationEditPage() {
                       id='address'
                       name='address'
                       value={formData.address}
-                      onChange={handleChange}
-                      className='w-full text-lg border-gray-400 text-gray-900'
-                    />
-                  </div>
-
-                  <div className='space-y-2'>
-                    <Label
-                      htmlFor='bio'
-                      className='text-lg font-medium text-primary'
-                    >
-                      Bio
-                    </Label>
-                    <Input
-                      id='bio'
-                      name='bio'
-                      value={formData.bio}
                       onChange={handleChange}
                       className='w-full text-lg border-gray-400 text-gray-900'
                     />

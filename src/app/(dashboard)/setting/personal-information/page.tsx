@@ -26,7 +26,7 @@ export default function PersonalInformationPage() {
             <div className='mb-6 flex items-center justify-between'>
               <Link
                 href='/setting'
-                className='inline-flex items-center text-primary hover:text-teal-700'
+                className='inline-flex items-center text-primary hover:text-[#119DAA]'
               >
                 <ArrowLeft className='mr-2 h-6 w-6' />
                 <span className='text-2xl font-semibold'>
@@ -88,13 +88,6 @@ export default function PersonalInformationPage() {
                     </div>
                     <div className='text-lg text-primary px-2 py-3 rounded-md border border-gray-500'>
                       {profile?.address || "N/A"}
-                    </div>
-                  </div>
-
-                  <div className='flex flex-col gap-1'>
-                    <div className='text-lg font-medium text-primary'>Bio</div>
-                    <div className='text-lg text-primary px-2 py-3 rounded-md border border-gray-500'>
-                      {profile?.bio || "N/A"}
                     </div>
                   </div>
                 </div>

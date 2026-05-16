@@ -22,7 +22,7 @@ export default function TermsConditionPage() {
             <div className='mb-6 flex items-center justify-between'>
               <Link
                 href='/setting'
-                className='inline-flex items-center text-primary hover:text-teal-700'
+                className='inline-flex items-center text-primary hover:text-[#119DAA]'
               >
                 <ArrowLeft className='mr-2 h-4 w-4' />
                 <span className='text-xl font-semibold'>Terms & Condition</span>
@@ -30,7 +30,7 @@ export default function TermsConditionPage() {
 
               <Link
                 href='/setting/terms-condition/edit'
-                className='inline-flex items-center text-primary hover:text-teal-700 border border-[#760C2A] rounded-md px-4 py-1.5'
+                className='inline-flex items-center text-primary hover:text-[#119DAA] border border-[#119DAA] rounded-md px-4 py-1.5'
               >
                 <span className='text-xl font-semibold'>Edit</span>
               </Link>
