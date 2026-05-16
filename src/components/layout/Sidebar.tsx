@@ -111,8 +111,8 @@ const navItems = [
     ),
   },
   {
-    label: "Settings",
-    href: "/settings",
+    label: "Setting",
+    href: "/setting",
     icon: (
       <svg
         xmlns='http://www.w3.org/2000/svg'
