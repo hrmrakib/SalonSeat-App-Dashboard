@@ -50,7 +50,7 @@ export default function PersonalInformationPage() {
                 <div className='w-full md:w-64 flex flex-col items-center border border-gray-600 rounded-md px-6 py-10'>
                   <div className='w-32 h-32 rounded-full overflow-hidden relative mb-3'>
                     <Image
-                      src={profile?.image || "/admin.jpg"} // Falls back to local image if API image is null
+                      src={profile?.image || "/admin.jpg"}
                       alt='Profile'
                       fill
                       className='object-cover'

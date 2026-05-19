@@ -1,8 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
+import { useState } from "react";
+import ConfirmModal from "../modal/ConfirmModal";
+import { toast } from "sonner";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -138,12 +141,31 @@ const navItems = [
 ];
 
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
+  const router = useRouter();
   const pathname = usePathname();
+  const [logoutModalOpen, setLogoutModalOpen] = useState(false);
 
   const isActive = (href: string) => {
     if (href === "/") return pathname === "/";
     return pathname.startsWith(href);
   };
+
+  async function handleLogoutConfirm() {
+    try {
+      // 2. Clear tokens/localstorage if you're managing them there
+      localStorage.removeItem("access_token");
+      sessionStorage.clear();
+
+      // 3. Show a friendly success notification
+      toast.success("Logged out successfully");
+
+      // 4. Redirect the admin back to the login screen
+      router.push("/login");
+    } catch (error) {
+      console.error("Logout failed:", error);
+      toast.error("Something went wrong during logout. Please try again.");
+    }
+  }
 
   return (
     <>
@@ -201,7 +223,10 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
         {/* Log Out */}
         <div className='px-3 py-4 border-t border-gray-100'>
-          <button className='flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-[#2BBFBF] hover:bg-[#E8F8F8] transition-colors w-full cursor-pointer'>
+          <button
+            onClick={() => setLogoutModalOpen(true)}
+            className='flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-[#2BBFBF] hover:bg-[#E8F8F8] transition-colors w-full cursor-pointer'
+          >
             <svg
               xmlns='http://www.w3.org/2000/svg'
               className='w-5 h-5'
@@ -220,6 +245,16 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           </button>
         </div>
       </aside>
+      {/* Embedded Reusable Modal */}
+      <ConfirmModal
+        isOpen={logoutModalOpen}
+        onClose={() => setLogoutModalOpen(false)}
+        onConfirm={handleLogoutConfirm}
+        title='Log Out of SalonSeat?'
+        message='Are you sure you want to log out of your admin dashboard account?'
+        confirmText='Log Out'
+        variant='danger'
+      />
     </>
   );
 }
