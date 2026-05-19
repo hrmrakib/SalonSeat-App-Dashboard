@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Mail, KeyRound, Eye, EyeOff } from "lucide-react";
 import AuthLayout from "@/components/auth/AuthLayout";
 
-export default function LoginPage() { 
+export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -22,7 +22,7 @@ export default function LoginPage() {
     setLoading(true);
     await new Promise((r) => setTimeout(r, 800));
     setLoading(false);
-    router.push("/dashboard");
+    router.push("/");
   }
 
   return (

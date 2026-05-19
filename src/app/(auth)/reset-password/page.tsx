@@ -18,8 +18,8 @@ export default function ResetPasswordPage() {
     e.preventDefault();
     setError("");
     if (!password || !confirm) return setError("Please fill in all fields.");
-    if (password.length < 8 || password.length > 10)
-      return setError("Password must be 8–10 characters long.");
+    if (password.length < 6 || password.length > 25)
+      return setError("Password must be 6–25 characters long.");
     if (password !== confirm) return setError("Passwords do not match.");
     setLoading(true);
     await new Promise((r) => setTimeout(r, 800));
@@ -37,10 +37,10 @@ export default function ResetPasswordPage() {
         >
           ←
         </button>
-        Verify Email
+        Reset Password
       </h1>
       <p className='text-xs text-gray-400 text-center mb-6'>
-        Your password must be 8–10 character long.
+        Your password must be 6–25 character long.
       </p>
 
       <form onSubmit={handleSubmit} className='flex flex-col gap-4'>

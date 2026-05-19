@@ -10,8 +10,8 @@ const earningsColumns: Column<EarningTransaction>[] = [
   { key: "transactionId", header: "#Tr.ID", accessor: "transactionId" },
   { key: "userName", header: "User Name", accessor: "userName" },
   { key: "subscription", header: "Subscription", accessor: "subscription" },
-  { key: "amount", header: "Amount", accessor: "amount" },
   { key: "date", header: "Date", accessor: "date" },
+  { key: "amount", header: "Amount", accessor: "amount" },
 ];
 
 export default function EarningsPage() {
