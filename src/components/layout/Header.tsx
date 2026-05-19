@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import ConfirmModal from "../modal/ConfirmModal";
+import ConfirmModal from "../modal/LogoutModal";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 

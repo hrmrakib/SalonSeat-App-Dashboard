@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 import { useState } from "react";
-import ConfirmModal from "../modal/ConfirmModal";
+import ConfirmModal from "../modal/LogoutModal";
 import { toast } from "sonner";
 
 interface SidebarProps {
