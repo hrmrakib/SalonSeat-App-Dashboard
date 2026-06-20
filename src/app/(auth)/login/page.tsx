@@ -53,15 +53,16 @@ export default function LoginPage() {
       }
 
       console.log(data);
+      console.log(data?.access);
 
       if (data.success) {
+        localStorage.setItem("access_token", data.access);
         dispatch(
           setUser({
             user: data.user,
             token: data.access,
           }),
         );
-        localStorage.setItem("access_token", data.token);
       }
 
       router.push("/");
