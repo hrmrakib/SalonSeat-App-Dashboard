@@ -11,7 +11,7 @@ const userAPI = baseAPI.injectEndpoints({
 
     getAllUsers: build.query({
       query: (params) => ({
-        url: `/user/all-user`,
+        url: `/admin/users/`,
         method: "GET",
         params,
       }),
@@ -24,9 +24,21 @@ const userAPI = baseAPI.injectEndpoints({
         params,
       }),
     }),
+
+    updateStatus: build.mutation({
+      query: ({ id, body }) => ({
+        url: `/admin/users/${id}`,
+        method: "PATCH",
+        body,
+      }),
+    }),
   }),
 });
 
-export const { useGetProfileQuery, useGetAllUsersQuery, useGetUserByIdQuery } =
-  userAPI;
+export const {
+  useGetProfileQuery,
+  useGetAllUsersQuery,
+  useGetUserByIdQuery,
+  useUpdateStatusMutation,
+} = userAPI;
 export default userAPI;
