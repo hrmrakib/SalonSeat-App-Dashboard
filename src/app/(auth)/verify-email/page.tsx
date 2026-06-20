@@ -1,16 +1,22 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useState, useRef, KeyboardEvent } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useRef, KeyboardEvent, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import AuthLayout from "@/components/auth/AuthLayout";
+import { useVerifyForgetPasswordOtpMutation } from "@/redux/features/auth/authAPI";
 
 const OTP_LENGTH = 6;
 
-export default function VerifyEmailPage() {
+function VerifyEmailForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const email = searchParams.get("email") || "";
+
   const [otp, setOtp] = useState<string[]>(Array(OTP_LENGTH).fill(""));
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+
+  const [verifyOtp, { isLoading }] = useVerifyForgetPasswordOtpMutation();
   const inputs = useRef<(HTMLInputElement | null)[]>([]);
 
   function handleChange(index: number, value: string) {
@@ -41,12 +47,33 @@ export default function VerifyEmailPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    if (otp.join("").length < OTP_LENGTH)
+
+    const otpCode = otp.join("");
+    if (otpCode.length < OTP_LENGTH) {
       return setError("Please enter the full 6-digit OTP.");
-    setLoading(true);
-    await new Promise((r) => setTimeout(r, 800));
-    setLoading(false);
-    router.push("/reset-password");
+    }
+    if (!email) {
+      return setError("Email address is missing. Please restart the process.");
+    }
+
+    try {
+      const response = await verifyOtp({
+        email: email,
+        otp: otpCode,
+      }).unwrap();
+
+      if (response?.success) {
+        router.push(`/reset-password?email=${encodeURIComponent(email)}`);
+      } else {
+        setError(response?.message || "Invalid OTP code. Please try again.");
+      }
+    } catch (err: any) {
+      setError(
+        err?.data?.message ||
+          err?.message ||
+          "Failed to verify OTP. Please try again.",
+      );
+    }
   }
 
   return (
@@ -78,9 +105,10 @@ export default function VerifyEmailPage() {
               inputMode='numeric'
               maxLength={1}
               value={digit}
+              disabled={isLoading}
               onChange={(e) => handleChange(i, e.target.value)}
               onKeyDown={(e) => handleKeyDown(i, e)}
-              className={`w-10 h-10 sm:w-12 sm:h-12 text-center rounded-full border text-base font-semibold text-gray-800 focus:outline-none focus:ring-2 focus:ring-teal-400 transition
+              className={`w-10 h-10 sm:w-12 sm:h-12 text-center rounded-full border text-base font-semibold text-gray-800 focus:outline-none focus:ring-2 focus:ring-teal-400 transition disabled:opacity-50
                 ${digit ? "border-teal-400 bg-teal-50" : "border-gray-200 bg-white"}`}
             />
           ))}
@@ -90,16 +118,31 @@ export default function VerifyEmailPage() {
 
         <button
           type='submit'
-          disabled={loading}
+          disabled={isLoading}
           className='w-full py-3 rounded-full bg-teal-500 hover:bg-teal-600 active:scale-[0.98] text-white text-sm font-semibold transition disabled:opacity-60'
         >
-          {loading ? "Verifying..." : "Verify"}
+          {isLoading ? "Verifying..." : "Verify"}
         </button>
 
         <p className='text-xs text-gray-400 text-center'>
-          Please enter the OTP we have sent you in your email.
+          Please enter the OTP we have sent to{" "}
+          <strong className='text-gray-600'>{email}</strong>
         </p>
       </form>
     </AuthLayout>
+  );
+}
+
+export default function VerifyEmailPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className='text-center p-8 text-sm text-gray-500'>
+          Loading component...
+        </div>
+      }
+    >
+      <VerifyEmailForm />
+    </Suspense>
   );
 }

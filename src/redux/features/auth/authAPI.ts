@@ -2,30 +2,6 @@ import baseAPI from "@/redux/api/api";
 
 const AuthenticationAPI = baseAPI.injectEndpoints({
   endpoints: (builder) => ({
-    login: builder.mutation({
-      query: (body) => ({
-        url: "/auth/login",
-        method: "POST",
-        body,
-      }),
-    }),
-
-    createAccount: builder.mutation({
-      query: (data) => ({
-        url: "/user/create-user",
-        method: "POST",
-        body: data,
-      }),
-    }),
-
-    verifyOtp: builder.mutation({
-      query: (body) => ({
-        url: "/auth/verify-email",
-        method: "POST",
-        body,
-      }),
-    }),
-
     sendOtp: builder.mutation({
       query: (body) => ({
         url: "/auth/send-otp",
@@ -44,7 +20,7 @@ const AuthenticationAPI = baseAPI.injectEndpoints({
 
     forgotPassword: builder.mutation({
       query: (body) => ({
-        url: "/auth/forgot-password",
+        url: "/auth/forget-password",
         method: "POST",
         body,
       }),
@@ -60,7 +36,7 @@ const AuthenticationAPI = baseAPI.injectEndpoints({
 
     verifyForgetPasswordOtp: builder.mutation({
       query: (body) => ({
-        url: "/auth/forgot-password/otp-verify",
+        url: "/auth/otp-verify",
         method: "POST",
         body,
       }),
@@ -69,9 +45,6 @@ const AuthenticationAPI = baseAPI.injectEndpoints({
 });
 
 export const {
-  useLoginMutation,
-  useCreateAccountMutation,
-  useVerifyOtpMutation,
   useSendOtpMutation,
   useResendOtpMutation,
   useForgotPasswordMutation,

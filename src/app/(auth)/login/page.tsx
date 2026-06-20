@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState } from "react";
@@ -5,6 +6,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Mail, KeyRound, Eye, EyeOff } from "lucide-react";
 import AuthLayout from "@/components/auth/AuthLayout";
+import { setUser } from "@/redux/features/auth/authSlice";
+import { useDispatch } from "react-redux";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -14,15 +17,59 @@ export default function LoginPage() {
   const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const dispatch = useDispatch();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    if (!email || !password) return setError("Please fill in all fields.");
+
+    if (!email || !password) {
+      return setError("Please fill in all fields.");
+    }
+
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 800));
-    setLoading(false);
-    router.push("/");
+
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
+      if (!apiUrl) {
+        throw new Error("API URL is not configured.");
+      }
+
+      const response = await fetch(`${apiUrl}/auth/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.message || "Invalid credentials. Please try again.",
+        );
+      }
+
+      console.log(data);
+
+      if (data.success) {
+        dispatch(
+          setUser({
+            user: data.user,
+            token: data.access,
+          }),
+        );
+        localStorage.setItem("access_token", data.token);
+      }
+
+      router.push("/");
+    } catch (err: any) {
+      setError(err.message || "An unexpected error occurred.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (

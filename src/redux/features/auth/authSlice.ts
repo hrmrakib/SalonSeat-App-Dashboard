@@ -2,34 +2,11 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 type TUser = {
-  _id: string;
-  name: string;
+  id: number | string;
+  full_name: string;
   email: string;
-  role: "USER" | "ADMIN" | string;
-  image: string;
-  address?: string;
-  phone?: string;
-  bio?: string;
-  verified?: boolean;
-  isDeleted?: boolean;
-  location?: {
-    type: "Point";
-    coordinates: [number, number];
-  };
-  interested?: any[];
-  createdAt?: string;
-  updatedAt?: string;
-  // Fields below were in your type but missing from API response
-  // Marked as optional so the app doesn't crash when missing
-  googleId?: string;
-  appleId?: string;
-  stripeAccountId?: string;
-  isStripeConnected?: boolean;
-  post?: number;
-  follower?: number;
-  following?: number;
-  paypalAccount?: string;
-  income?: number;
+  user_role: "USER" | "ADMIN" | string;
+  image: string | null;
 };
 
 type TAuthState = {
