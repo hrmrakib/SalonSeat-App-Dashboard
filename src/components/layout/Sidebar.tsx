@@ -172,14 +172,14 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       {/* Mobile overlay */}
       {isOpen && (
         <div
-          className='fixed inset-0 bg-black/40 z-40 lg:hidden'
+          className='fixed inset-0 bg-black/40 z-30 lg:hidden'
           onClick={onClose}
         />
       )}
 
       {/* Sidebar */}
       <aside
-        className={`fixed top-0 left-0 z-50 h-full w-56 bg-white border-r border-gray-100 flex flex-col transition-transform duration-300 ease-in-out
+        className={`fixed top-0 left-0 z-30 h-full w-56 bg-white border-r border-gray-100 flex flex-col transition-transform duration-300 ease-in-out
           lg:translate-x-0
           ${isOpen ? "translate-x-0" : "-translate-x-full"}
         `}

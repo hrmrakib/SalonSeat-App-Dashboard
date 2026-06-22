@@ -13,7 +13,7 @@ const userAPI = baseAPI.injectEndpoints({
       query: (params) => ({
         url: `/admin/users/`,
         method: "GET",
-        params,
+        // params,
       }),
     }),
 
