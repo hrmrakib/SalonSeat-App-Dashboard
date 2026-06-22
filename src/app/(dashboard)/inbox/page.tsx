@@ -341,6 +341,7 @@ function MessagingComponent() {
       setNewMessage("");
       return;
     }
+    console.log({ selectedConversationId, socket });
 
     if (!socket) return;
     socket.send(

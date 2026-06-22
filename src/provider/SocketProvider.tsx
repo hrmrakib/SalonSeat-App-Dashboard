@@ -32,7 +32,7 @@ export const WebSocketProvider = ({
     // ← skip if already connected to this conversation
     if (currentConversationId.current === conversationId) return;
 
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("access_token");
     if (!token) return;
 
     // Close previous socket cleanly
@@ -45,9 +45,9 @@ export const WebSocketProvider = ({
 
     console.log("inside provider", conversationId);
 
-    const ws = new WebSocket(
-      `wss://5r6mdm6l-8000.inc1.devtunnels.ms/ws/asc/chats/?token=${token}`,
-    );
+    const web_socket_url = `wss://${process.env.NEXT_PUBLIC_WEBSOCKET_URL}/ws/asc/chats/?token=${token}`;
+
+    const ws = new WebSocket(web_socket_url);
 
     ws.onopen = () => console.log("WebSocket connected");
 
