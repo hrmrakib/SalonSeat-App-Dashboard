@@ -2,11 +2,13 @@
 "use client";
 
 import { useChangePasswordMutation } from "@/redux/features/auth/authAPI";
-import { Eye, EyeOff, Lock } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff, Lock } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 
 export default function ChangePasswordTab() {
+  const router = useRouter();
   const [showOld, setShowOld] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -45,7 +47,11 @@ export default function ChangePasswordTab() {
 
   return (
     <div className='p-6 max-w-sm mx-auto'>
-      <h2 className='text-base font-semibold text-slate-800 mb-6 pb-4 border-b border-slate-100'>
+      <h2 className='flex items-center gap-2 text-base font-semibold text-slate-800 mb-6 pb-4 border-b border-slate-100'>
+        <button onClick={() => router.back()}>
+          {" "}
+          <ArrowLeft />{" "}
+        </button>{" "}
         Change Password
       </h2>
 

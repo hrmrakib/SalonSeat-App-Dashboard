@@ -11,16 +11,19 @@ import {
   useGetCMSQuery,
   useUpdateCMSMutation,
 } from "@/redux/features/setting/settingAPI";
+import { ArrowLeft } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 export default function EditTermsTab() {
+  const router = useRouter();
   const editorRef = useRef<HTMLDivElement>(null);
   const quillRef = useRef<Quill | null>(null);
   const [content, setContent] = useState<string>("");
 
   const { data: aboutUsData, isLoading } = useGetCMSQuery({});
-  const terms = aboutUsData?.data?.terms_condition;
+  const terms = aboutUsData?.data?.terms_conditions;
 
-  console.log(aboutUsData?.data?.terms_condition);
+  console.log(aboutUsData?.data?.terms_conditions);
 
   const [updateCMSMutation, { isLoading: isSaving }] = useUpdateCMSMutation();
 
@@ -41,9 +44,9 @@ export default function EditTermsTab() {
 
         quillRef.current = quill;
 
-        if (aboutUsData?.data?.terms_condition) {
-          quill.root.innerHTML = aboutUsData?.data?.terms_condition;
-          setContent(aboutUsData?.data?.terms_condition);
+        if (aboutUsData?.data?.terms_conditions) {
+          quill.root.innerHTML = aboutUsData?.data?.terms_conditions;
+          setContent(aboutUsData?.data?.terms_conditions);
         }
 
         quill.on("text-change", () => {
@@ -59,7 +62,7 @@ export default function EditTermsTab() {
     return () => {
       initialized = true;
     };
-  }, [aboutUsData?.data?.terms_condition]);
+  }, [aboutUsData?.data?.terms_conditions]);
 
   if (isLoading && !terms && !quillRef.current) return <div>Loading...</div>;
 
@@ -71,25 +74,30 @@ export default function EditTermsTab() {
 
     try {
       const res = await updateCMSMutation({
-        terms_conditions: content,
+        terms_conditionss: content,
       }).unwrap();
 
       if (res) {
         toast.success("Terms and conditions updated successfully!");
+        router.push("/setting");
       }
     } catch (err: any) {
-      toast.error(
-        err?.data?.message || "Failed to update community guidelines",
-      );
+      toast.error(err?.data?.message || "Failed to update content.");
     }
   };
 
   return (
     <div className='min-h-[75vh] w-[96%] mx-auto flex flex-col justify-between gap-6 p-5'>
       <div className='space-y-6'>
-        <h2 className='text-base font-semibold text-slate-800'>
-          Edit Terms & Policies{" "}
+        <h2 className='text-base font-semibold text-slate-800'></h2>
+
+        <h2 className='flex items-center gap-2 text-base font-semibold text-slate-800 mb-6 pb-4 border-b border-slate-100'>
+          <button onClick={() => router.back()}>
+            <ArrowLeft />
+          </button>
+          Edit Terms and Conditions
         </h2>
+
         <div className='h-auto'>
           <div
             ref={editorRef}
