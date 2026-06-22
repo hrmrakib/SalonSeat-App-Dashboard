@@ -13,10 +13,10 @@ export function useAuth() {
 
     isLoggedIn: !!user && !!token,
 
-    isVerified: user?.verified ?? false,
+    // isVerified: user?.verified ?? false,
 
-    isAdmin: user?.role === "ADMIN",
+    // isAdmin: user?.role === "ADMIN",
 
-    isUser: user?.role === "USER",
+    // isUser: user?.role === "USER",
   };
 }

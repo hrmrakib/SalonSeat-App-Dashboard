@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
-import { RoleRedirect } from "@/components/auth/RoleRedirect";
 
 export default function SettingsPage() {
   const settingsLinks = [
@@ -14,7 +13,6 @@ export default function SettingsPage() {
   ];
 
   return (
-    // <RoleRedirect allowedRole='ADMIN'>
     <div className='flex bg-white rounded-2xl p-6'>
       <div className='flex-1 w-full'>
         <main className='w-full p-4 md:p-6'>
@@ -40,6 +38,5 @@ export default function SettingsPage() {
         </main>
       </div>
     </div>
-    // </RoleRedirect>
   );
 }
