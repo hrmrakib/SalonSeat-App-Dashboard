@@ -3,6 +3,8 @@
 
 import { useState } from "react";
 import { useGetAllListingsQuery } from "@/redux/features/listing/listingAPI";
+import { Search } from "lucide-react";
+import { useDebounce } from "@/hooks/useDebounce";
 
 export interface ListingPhoto {
   id: number;
@@ -68,10 +70,13 @@ export default function SalonDashboard() {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
 
+  const debounceSearch = useDebounce(searchQuery, 1000);
+
   const { data, isLoading } = useGetAllListingsQuery({
     filter: "approved",
     page,
     page_size: pageSize,
+    search: debounceSearch,
   });
 
   const listings = data?.data || [];
@@ -164,8 +169,8 @@ export default function SalonDashboard() {
               onChange={(e) => setSearchQuery(e.target.value)}
               className='w-full md:w-64 bg-slate-50 text-slate-700 text-xs rounded-xl pl-4 pr-10 py-2.5 border border-slate-200 focus:outline-hidden focus:border-[#159a9c] focus:bg-white transition-all'
             />
-            <div className='absolute right-2 w-7 h-7 bg-[#159a9c] text-white rounded-lg flex items-center justify-center text-xs'>
-              🔍
+            <div className='absolute right-2 w-8 h-8 bg-[#159a9c] text-white rounded-lg flex items-center justify-center text-xs'>
+              <Search size={16} />
             </div>
           </div>
         </div>
