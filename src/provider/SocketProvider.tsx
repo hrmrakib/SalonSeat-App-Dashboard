@@ -32,7 +32,7 @@ export const WebSocketProvider = ({
     // ← skip if already connected to this conversation
     if (currentConversationId.current === conversationId) return;
 
-    const token = localStorage.getItem("access_token");
+    const token = localStorage.getItem("token");
     if (!token) return;
 
     // Close previous socket cleanly
@@ -46,8 +46,7 @@ export const WebSocketProvider = ({
     console.log("inside provider", conversationId);
 
     const ws = new WebSocket(
-      // `wss://api.poolofcast.com/ws/chat/${conversationId}/?token=${token}`,
-      `ws://10.10.12.15:8086/ws/asc/chats/?access_token=${token}`,
+      `wss://5r6mdm6l-8000.inc1.devtunnels.ms/ws/asc/chats/?token=${token}`,
     );
 
     ws.onopen = () => console.log("WebSocket connected");

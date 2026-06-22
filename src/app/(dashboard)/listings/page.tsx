@@ -3,6 +3,7 @@
 
 "use client";
 
+import { useAuth } from "@/hooks/useAuth";
 import { getImageURL } from "@/lib/getImageURL";
 import {
   useApprovedListingMutation,
@@ -75,6 +76,7 @@ export default function SalonDashboard() {
   const [page, setPage] = useState<number>(1);
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
   const page_size = 10;
+  const { user } = useAuth();
 
   const { data, isLoading } = useGetAllListingsQuery({
     filter,
@@ -121,7 +123,9 @@ export default function SalonDashboard() {
       <div>
         {/* Header section */}
         <div className='mb-6'>
-          <h1 className='text-xl font-bold text-gray-800'>Welcome, Sharon</h1>
+          <h1 className='text-xl font-bold text-gray-800'>
+            Welcome, {user?.full_name || ""}
+          </h1>
           <p className='text-sm text-gray-500'>Have a nice day</p>
         </div>
 

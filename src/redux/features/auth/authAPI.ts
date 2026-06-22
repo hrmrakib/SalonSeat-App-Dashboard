@@ -41,6 +41,14 @@ const AuthenticationAPI = baseAPI.injectEndpoints({
         body,
       }),
     }),
+
+    changePassword: builder.mutation({
+      query: (body) => ({
+        url: "/auth/change-password",
+        method: "POST",
+        body,
+      }),
+    }),
   }),
 });
 
@@ -50,5 +58,6 @@ export const {
   useForgotPasswordMutation,
   useResetPasswordMutation,
   useVerifyForgetPasswordOtpMutation,
+  useChangePasswordMutation,
 } = AuthenticationAPI;
 export default AuthenticationAPI;

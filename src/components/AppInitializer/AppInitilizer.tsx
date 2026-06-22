@@ -2,8 +2,8 @@
 
 import { useEffect } from "react";
 import { useDispatch } from "react-redux";
-import { useGetProfileQuery } from "@/redux/features/settings/settingsAPI";
 import { setProfileLoading, setUser } from "@/redux/features/auth/authSlice";
+import { useGetProfileQuery } from "@/redux/features/setting/settingAPI";
 
 export default function AppInitializer({
   children,
@@ -27,9 +27,7 @@ export default function AppInitializer({
 
   useEffect(() => {
     if (data?.data) {
-      dispatch(
-        setUser({ user: data.data, token: data?.data?.access_token || token }),
-      );
+      dispatch(setUser({ user: data.data, token: data.access_token || token }));
     }
   }, [data, token, dispatch]);
 

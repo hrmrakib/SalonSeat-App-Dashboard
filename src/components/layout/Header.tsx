@@ -5,6 +5,7 @@ import Link from "next/link";
 import ConfirmModal from "../modal/LogoutModal";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/hooks/useAuth";
 
 interface HeaderProps {
   onMenuToggle: () => void;
@@ -15,6 +16,7 @@ export default function Header({ onMenuToggle }: HeaderProps) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [logoutModalOpen, setLogoutModalOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const { user } = useAuth();
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -73,7 +75,7 @@ export default function Header({ onMenuToggle }: HeaderProps) {
           </button>
           <div>
             <h1 className='text-lg font-semibold text-gray-800'>
-              Welcome, Sharon
+              Welcome, {user?.full_name || ""}
             </h1>
             <p className='text-sm text-gray-400'>Have a nice day</p>
           </div>
@@ -127,7 +129,7 @@ export default function Header({ onMenuToggle }: HeaderProps) {
                 </svg>
               </div>
               <span className='text-sm font-medium text-gray-800 hidden sm:block'>
-                Sharon
+                {user?.full_name || ""}
               </span>
               <svg
                 xmlns='http://www.w3.org/2000/svg'

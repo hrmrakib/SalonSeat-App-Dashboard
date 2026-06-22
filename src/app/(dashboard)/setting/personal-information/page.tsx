@@ -1,100 +1,132 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
-import Link from "next/link";
+import { useAuth } from "@/hooks/useAuth";
+import { getImageURL } from "@/lib/getImageURL";
+import { useUpdateProfileMutation } from "@/redux/features/setting/settingAPI";
+import { ArrowLeft, Upload } from "lucide-react";
 import Image from "next/image";
-import { ArrowLeft, Edit } from "lucide-react";
-import { useGetProfileQuery } from "@/redux/features/settings/settingsAPI";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 
-export default function PersonalInformationPage() {
-  const { data: profileData, isLoading } = useGetProfileQuery({});
+export default function ProfileInfoTab() {
+  const router = useRouter();
+  const { user } = useAuth();
+  const [updateProfile, { isLoading }] = useUpdateProfileMutation();
 
-  const profile = profileData?.data;
+  const [name, setName] = useState(user?.full_name || "");
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  if (isLoading) {
-    return (
-      <div className='flex min-h-screen items-center justify-center bg-[#FFFFFF]'>
-        <p className='text-lg text-primary animate-pulse'>Loading Profile...</p>
-      </div>
-    );
-  }
+  useEffect(() => {
+    if (user) {
+      setName(user.full_name);
+      //   setImagePreview(user.image || "");
+    }
+  }, [user]);
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+  };
+
+  const handleSave = async () => {
+    const formData = new FormData();
+    formData.append("full_name", name);
+    if (imageFile) {
+      formData.append("image", imageFile);
+    }
+
+    try {
+      await updateProfile(formData).unwrap();
+      toast.success("Profile updated successfully");
+    } catch {
+      toast.error("Failed to update profile");
+    }
+  };
+
+  console.log({ user, name });
 
   return (
-    <div className='flex min-h-screen bg-[#FFFFFF] rounded-2xl'>
-      <div className='flex-1 w-full'>
-        <main className='w-full p-4 md:p-6'>
-          <div className=' mx-auto'>
-            <div className='mb-6 flex items-center justify-between'>
-              <Link
-                href='/setting'
-                className='inline-flex items-center text-primary hover:text-[#119DAA]'
-              >
-                <ArrowLeft className='mr-2 h-6 w-6' />
-                <span className='text-2xl font-semibold'>
-                  Personal Information
-                </span>
-              </Link>
-              <Link
-                href='/setting/personal-information/edit'
-                className='bg-primary text-white rounded-md px-4 py-2'
-              >
-                <div className='flex items-center gap-2'>
-                  <Edit className='h-4 w-4' />
-                  <span>Edit</span>
-                </div>
-              </Link>
+    <div className='p-6 max-w-sm mx-auto'>
+      <h2 className='flex items-center gap-2 text-base font-semibold text-slate-800 mb-6 pb-4 border-b border-slate-100'>
+        <button onClick={() => router.back()}>
+          {" "}
+          <ArrowLeft />{" "}
+        </button>{" "}
+        Profile Information
+      </h2>
+
+      <div className='space-y-6'>
+        {/* Profile Picture */}
+        <div>
+          <label className='block text-sm font-medium text-slate-700 mb-3'>
+            Profile Picture
+          </label>
+          <div className='flex flex-col items-center justify-center p-6 border border-slate-200 rounded-xl bg-white max-w-sm'>
+            <div className='w-16 h-16 rounded-full overflow-hidden mb-4'>
+              {imagePreview ? (
+                <Image
+                  src={imagePreview}
+                  alt='Profile'
+                  width={64}
+                  height={64}
+                  className='w-full h-full object-cover'
+                  unoptimized
+                />
+              ) : (
+                <Image
+                  src={getImageURL(user?.image)}
+                  alt='Profile'
+                  width={64}
+                  height={64}
+                  className='w-full h-full object-cover'
+                  unoptimized
+                />
+              )}
             </div>
-
-            <div className='bg-[#ffffff93] rounded-md p-6'>
-              <div className='flex flex-col md:flex-row gap-8 mb-6'>
-                {/* Profile Photo Section */}
-                <div className='w-full md:w-64 flex flex-col items-center border border-gray-600 rounded-md px-6 py-10'>
-                  <div className='w-32 h-32 rounded-full overflow-hidden relative mb-3'>
-                    <Image
-                      src={profile?.image || "/admin.jpg"}
-                      alt='Profile'
-                      fill
-                      className='object-cover'
-                    />
-                  </div>
-                  <span className='text-base text-primary uppercase'>
-                    {profile?.role || "Admin"}
-                  </span>
-                  <span className='font-medium text-lg text-primary'>
-                    {profile?.name}
-                  </span>
-                </div>
-
-                {/* User Information Section */}
-                <div className='flex-1 space-y-6'>
-                  <div className='flex flex-col gap-1'>
-                    <div className='text-lg font-medium text-primary'>Name</div>
-                    <div className='text-lg text-primary px-2 py-3 rounded-md border border-gray-500'>
-                      {profile?.name || "N/A"}
-                    </div>
-                  </div>
-
-                  <div className='flex flex-col gap-1'>
-                    <div className='text-lg font-medium text-primary'>
-                      Email
-                    </div>
-                    <div className='text-lg text-primary px-2 py-3 rounded-md border border-gray-500'>
-                      {profile?.email || "N/A"}
-                    </div>
-                  </div>
-
-                  <div className='flex flex-col gap-1'>
-                    <div className='text-lg font-medium text-primary'>
-                      Address
-                    </div>
-                    <div className='text-lg text-primary px-2 py-3 rounded-md border border-gray-500'>
-                      {profile?.address || "N/A"}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <input
+              ref={fileInputRef}
+              type='file'
+              accept='image/*'
+              className='hidden'
+              onChange={handleImageChange}
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className='flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-600 hover:bg-slate-50 transition-colors'
+            >
+              <Upload size={16} />
+              Upload Image
+            </button>
           </div>
-        </main>
+        </div>
+
+        {/* Name */}
+        <div>
+          <label className='block text-sm font-medium text-slate-700 mb-2'>
+            Name
+          </label>
+          <input
+            type='text'
+            value={name || ""}
+            onChange={(e) => setName(e.target.value)}
+            className='w-full px-4 py-3 bg-white border border-slate-200 rounded-lg text-sm text-slate-600 focus:outline-none focus:border-teal-500'
+            placeholder='Enter your name'
+          />
+        </div>
+
+        <button
+          onClick={handleSave}
+          disabled={isLoading}
+          className='w-full py-3 bg-teal-700 text-white text-sm font-bold rounded-lg hover:bg-teal-800 transition-colors mt-8 disabled:opacity-60 disabled:cursor-not-allowed'
+        >
+          {isLoading ? "Saving..." : "Save Changes"}
+        </button>
       </div>
     </div>
   );
