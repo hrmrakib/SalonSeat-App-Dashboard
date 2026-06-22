@@ -1,259 +1,739 @@
+/* eslint-disable react-hooks/set-state-in-effect */
+/* eslint-disable @next/next/no-img-element */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 "use client";
 
-import React, { useState } from "react";
-import { messages, chatMessages } from "@/lib/data";
-import type { Message } from "@/lib/types";
+import { useState, useRef, useEffect } from "react";
+import { SearchIcon, SendIcon, PlusIcon, ArrowLeft } from "lucide-react";
+import {
+  useFileUploadWithMessageMutation,
+  useGetMessagesQuery,
+  useGetMyConversationListsQuery,
+} from "@/redux/features/messages/messagesAPI";
+import { WebSocketProvider, useSocket } from "@/provider/SocketProvider";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
+import { useDispatch } from "react-redux";
+import { clearConversation } from "@/redux/features/messages/conversationSlice";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
-export default function InboxPage() {
-  const [selectedConversation, setSelectedConversation] =
-    useState<Message | null>(messages[0] || null);
-  const [newMessage, setNewMessage] = useState("");
-  const [showConversationList, setShowConversationList] = useState(true);
+// ── API shapes ────────────────────────────────────────────────────────────────
 
-  const handleSend = () => {
-    if (newMessage.trim()) {
-      setNewMessage("");
-    }
-  };
+type ApiParticipant = {
+  id: number;
+  full_name: string;
+  image: string | null;
+  last_activity: string;
+};
 
-  const handleSelectConversation = (msg: Message) => {
-    setSelectedConversation(msg);
-    setShowConversationList(false);
-  };
+type ApiMessageFile = {
+  id: number;
+  file: string;
+  file_name?: string;
+  file_type?: string;
+};
 
+type ApiLastMessage = {
+  id: number;
+  text: string;
+  files: ApiMessageFile[];
+  status: string;
+  sender_name: string;
+  created_at: string;
+  updated_at: string;
+};
+
+type ApiConversation = {
+  id: number;
+  participants: ApiParticipant[];
+  last_message: ApiLastMessage | null;
+};
+
+type ApiMessageSender = {
+  id: number;
+  full_name: string;
+  image: string | null;
+  last_activity: string;
+};
+
+type ApiMessage = {
+  id: number;
+  text: string;
+  files: ApiMessageFile[];
+  status: string;
+  sender: ApiMessageSender;
+  created_at: string;
+  updated_at: string;
+};
+
+type FilterTab = "unread" | "read" | "all";
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function getOtherParticipant(
+  participants: ApiParticipant[],
+  myId: number | string,
+): ApiParticipant {
+  return participants.find((p) => p.id !== myId) ?? participants[0];
+}
+
+function getImageUrl(path: string | null | undefined): string {
+  if (!path) return "/placeholder.svg";
+  const base = (process.env.NEXT_PUBLIC_IMAGE_URL || "").replace(/\/$/, "");
+  const filePath = path.startsWith("/") ? path : `/${path}`;
+  return `${base}${filePath}`;
+}
+
+// ── Skeletons ─────────────────────────────────────────────────────────────────
+
+function ConversationSkeleton() {
   return (
-    <div className='bg-white rounded-xl border border-gray-100 overflow-hidden'>
-      <div className='flex h-[calc(100vh-160px)] min-h-120'>
-        {/* Conversation List */}
+    <div className='divide-y divide-border'>
+      {Array.from({ length: 7 }).map((_, i) => (
         <div
-          className={`w-full md:w-80 border-r border-gray-100 flex flex-col shrink-0 ${
-            !showConversationList ? "hidden md:flex" : "flex"
-          }`}
+          key={i}
+          className='p-3 sm:p-4 flex items-start gap-3 animate-pulse'
         >
-          {/* List Header */}
-          <div className='px-5 py-4 border-b border-gray-100'>
-            {/* Search Input for Inbox matches design */}
-            <div className='relative'>
-              <svg
-                xmlns='http://www.w3.org/2000/svg'
-                className='absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400'
-                fill='none'
-                viewBox='0 0 24 24'
-                stroke='currentColor'
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap='round'
-                  strokeLinejoin='round'
-                  d='M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z'
-                />
-              </svg>
-              <input
-                type='text'
-                placeholder='Search...'
-                className='w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-100 rounded-lg text-sm outline-none focus:border-[#2BBFBF]'
+          <div className='h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-muted shrink-0' />
+          <div className='flex-1 min-w-0 space-y-2'>
+            <div className='flex items-center justify-between gap-2'>
+              <div className='h-3.5 w-28 rounded bg-muted' />
+              <div className='h-3 w-10 rounded bg-muted shrink-0' />
+            </div>
+            <div className='h-3 w-44 rounded bg-muted' />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function MessagesSkeleton() {
+  const layout = [
+    { sent: false, lines: 2, wide: false },
+    { sent: true, lines: 1, wide: false },
+    { sent: false, lines: 3, wide: true },
+    { sent: true, lines: 2, wide: false },
+    { sent: false, lines: 1, wide: false },
+    { sent: true, lines: 3, wide: true },
+    { sent: false, lines: 2, wide: false },
+    { sent: true, lines: 1, wide: false },
+  ];
+  return (
+    <div className='flex-1 overflow-y-auto p-3 sm:p-4 lg:p-6 space-y-3 sm:space-y-4'>
+      {layout.map((item, i) => (
+        <div
+          key={i}
+          className={`flex ${item.sent ? "justify-end" : "justify-start"} animate-pulse`}
+        >
+          <div
+            className={`flex flex-col gap-1.5 rounded-lg px-3 sm:px-4 py-2.5 sm:py-3 ${
+              item.wide ? "w-44 sm:w-56 md:w-64" : "w-28 sm:w-36 md:w-44"
+            } ${
+              item.sent
+                ? "bg-blue-100 rounded-br-none"
+                : "bg-muted rounded-bl-none border border-border"
+            }`}
+          >
+            {Array.from({ length: item.lines }).map((_, li) => (
+              <div
+                key={li}
+                className={`h-3 rounded ${
+                  item.sent ? "bg-blue-200" : "bg-muted-foreground/20"
+                } ${li === item.lines - 1 && item.lines > 1 ? "w-3/4" : "w-full"}`}
               />
+            ))}
+            <div
+              className={`h-2.5 w-10 rounded mt-1 self-end ${
+                item.sent ? "bg-blue-200" : "bg-muted-foreground/20"
+              }`}
+            />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── Main component ────────────────────────────────────────────────────────────
+
+function MessagingComponent() {
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [selectedConversationId, setSelectedConversationId] = useState<
+    number | null
+  >(null);
+  const [messages, setMessages] = useState<ApiMessage[] | undefined>();
+  const [newMessage, setNewMessage] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeFilter] = useState<FilterTab>("all");
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const { socket, connect } = useSocket();
+  const { user } = useAuth();
+  const dispatch = useDispatch();
+
+  const myId: number | string = user?.id ?? 0;
+
+  const [fileUploadWithMessageMutation, { isLoading: isUploadingWithMessage }] =
+    useFileUploadWithMessageMutation();
+
+  // ── Fetch conversations ──────────────────────────────────────────────────
+  const { data: conversationsData, isFetching: conversationsFetching } =
+    useGetMyConversationListsQuery({
+      page: 1,
+      limit: 100,
+      search: searchQuery,
+      message_status: activeFilter,
+    });
+
+  const conversations: ApiConversation[] =
+    conversationsData?.data ?? conversationsData?.data?.results ?? [];
+
+  // Auto-select first conversation on initial load
+  useEffect(() => {
+    if (conversations.length > 0 && selectedConversationId === null) {
+      setSelectedConversationId(conversations[0].id);
+    }
+  }, [conversations, selectedConversationId]);
+
+  const selectedConversation =
+    conversations.find((c) => c.id === selectedConversationId) ?? null;
+
+  const otherParticipant =
+    selectedConversation && selectedConversation.participants.length > 0
+      ? getOtherParticipant(selectedConversation.participants, myId)
+      : null;
+
+  // ── Fetch messages ───────────────────────────────────────────────────────
+  const {
+    data: messagesData,
+    refetch: refetchMessages,
+    isFetching: messagesFetching,
+  } = useGetMessagesQuery(
+    { conversationId: selectedConversationId, page: 1, page_size: 1000 },
+    { skip: !selectedConversationId },
+  );
+
+  // Clear messages immediately on conversation switch
+  useEffect(() => {
+    setMessages(undefined);
+  }, [selectedConversationId]);
+
+  // Merge API messages with any WS-only optimistic messages
+  useEffect(() => {
+    const incoming: ApiMessage[] | undefined =
+      messagesData?.data?.messages ?? messagesData?.data;
+    if (!Array.isArray(incoming)) return;
+
+    setMessages((prev) => {
+      const merged = new Map<number, ApiMessage>();
+      incoming.forEach((m) => merged.set(m.id, m));
+      (prev ?? []).forEach((m) => {
+        if (!merged.has(m.id)) merged.set(m.id, m);
+      });
+      return Array.from(merged.values()).sort(
+        (a, b) =>
+          new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+      );
+    });
+  }, [messagesData]);
+
+  // Connect WebSocket when conversation changes
+  useEffect(() => {
+    if (!selectedConversationId) return;
+    connect(selectedConversationId);
+  }, [selectedConversationId, connect]);
+
+  // WebSocket incoming messages
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleMessage = (event: MessageEvent) => {
+      try {
+        const raw = JSON.parse(event.data);
+        const payload = raw?.data ?? raw?.message ?? raw;
+
+        if (!payload?.id && !payload?.message_id) return;
+
+        const incoming: ApiMessage = {
+          id: payload.id ?? payload.message_id,
+          text: payload.text ?? "",
+          files: Array.isArray(payload.files) ? payload.files : [],
+          status: payload.status ?? "sent",
+          sender: {
+            id: payload.sender?.id ?? payload.sender_id,
+            full_name: payload.sender?.full_name ?? payload.sender_name ?? "",
+            image: payload.sender?.image ?? null,
+            last_activity: payload.sender?.last_activity ?? "",
+          },
+          created_at: payload.created_at,
+          updated_at: payload.updated_at ?? payload.created_at,
+        };
+
+        if (!incoming.sender.id) return;
+
+        setMessages((prev) => {
+          if (!prev) return [incoming];
+          const exists = prev.some((m) => m.id === incoming.id);
+          if (exists) return prev;
+          return [...prev, incoming].sort(
+            (a, b) =>
+              new Date(a.created_at).getTime() -
+              new Date(b.created_at).getTime(),
+          );
+        });
+      } catch (err) {
+        console.error("WS parse error:", err);
+      }
+    };
+
+    socket.addEventListener("message", handleMessage);
+    return () => socket.removeEventListener("message", handleMessage);
+  }, [socket]);
+
+  // Scroll to bottom on new messages
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  // ── Handlers ─────────────────────────────────────────────────────────────
+
+  const handleSelectConversation = (conv: ApiConversation) => {
+    setSelectedConversationId(conv.id);
+  };
+
+  const handleBack = () => {
+    setSelectedConversationId(null);
+    dispatch(clearConversation());
+  };
+
+  const handleSendMessage = async () => {
+    const hasText = newMessage.trim().length > 0;
+    const hasFiles = selectedFiles.length > 0;
+
+    if (!hasText && !hasFiles) return;
+    if (!selectedConversationId) return;
+
+    if (hasFiles) {
+      for (const file of selectedFiles) {
+        const formData = new FormData();
+        formData.append("message", hasText ? newMessage : "");
+        formData.append("files", file);
+
+        try {
+          const res = await fileUploadWithMessageMutation({
+            conversationId: selectedConversationId,
+            body: formData,
+          }).unwrap();
+
+          if (res?.status || res?.success) {
+            refetchMessages();
+            toast.success("Message sent successfully!");
+          }
+        } catch {
+          toast.error("Failed to send file.");
+        }
+      }
+      setSelectedFiles([]);
+      setNewMessage("");
+      return;
+    }
+
+    if (!socket) return;
+    socket.send(
+      JSON.stringify({
+        message: newMessage,
+        chat_id: selectedConversationId,
+      }),
+    );
+    setNewMessage("");
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length) setSelectedFiles((prev) => [...prev, ...files]);
+    e.target.value = "";
+  };
+
+  const removeFile = (index: number) =>
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
+
+  const isConversationSelected = !!selectedConversationId;
+
+  // ── Message Input ────────────────────────────────────────────────────────
+
+  const MessageInput = (
+    <div className='border-t border-[#0074BE] bg-background p-3 sm:p-4 shrink-0 safe-area-bottom'>
+      {selectedFiles.length > 0 && (
+        <div className='flex flex-wrap gap-2 mb-3 max-h-28 overflow-y-auto'>
+          {selectedFiles.map((file, index) => {
+            const isImage = file.type.startsWith("image/");
+            const previewUrl = isImage ? URL.createObjectURL(file) : null;
+            return (
+              <div
+                key={index}
+                className='relative group flex items-center gap-2 bg-muted rounded-lg p-2 pr-7 max-w-40'
+              >
+                {isImage && previewUrl ? (
+                  <img
+                    src={previewUrl}
+                    alt={file.name}
+                    className='h-9 w-9 rounded object-cover shrink-0'
+                  />
+                ) : (
+                  <div className='h-9 w-9 rounded bg-blue-100 flex items-center justify-center shrink-0'>
+                    <span className='text-xs text-blue-600 font-bold uppercase'>
+                      {file.name.split(".").pop()}
+                    </span>
+                  </div>
+                )}
+                <p className='text-xs text-muted-foreground truncate'>
+                  {file.name}
+                </p>
+                <button
+                  onClick={() => removeFile(index)}
+                  className='absolute top-1 right-1 h-4 w-4 rounded-full bg-destructive text-white text-xs flex items-center justify-center hover:bg-red-600'
+                >
+                  ×
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <div className='flex items-center gap-1.5 sm:gap-2'>
+        <input
+          type='file'
+          ref={fileInputRef}
+          className='hidden'
+          accept='image/*,.pdf,.doc,.docx,.txt'
+          multiple
+          onChange={handleFileChange}
+        />
+        <Button
+          variant='ghost'
+          size='icon'
+          onClick={() => fileInputRef.current?.click()}
+          className='h-10 w-10 shrink-0'
+        >
+          <PlusIcon className='h-4 w-4 sm:h-5 sm:w-5' />
+        </Button>
+        <Input
+          placeholder='Write your message...'
+          value={newMessage}
+          onChange={(e) => setNewMessage(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              handleSendMessage();
+            }
+          }}
+          className='rounded-lg h-10 sm:h-11 text-sm sm:text-base'
+        />
+        <Button
+          onClick={handleSendMessage}
+          disabled={
+            (!newMessage && selectedFiles.length === 0) ||
+            !selectedConversationId ||
+            isUploadingWithMessage
+          }
+          className='w-10 h-10 sm:w-11 sm:h-11 bg-[#2563EB] hover:bg-blue-700 text-white rounded-lg disabled:bg-[#2563EB] disabled:text-white disabled:cursor-not-allowed shrink-0'
+          size='icon'
+        >
+          <SendIcon className='h-4 w-4 sm:h-5 sm:w-5' />
+        </Button>
+      </div>
+    </div>
+  );
+
+  // ── Message Bubbles ──────────────────────────────────────────────────────
+
+  const MessageList = (
+    <div className='flex-1 overflow-y-auto p-3 sm:p-4 lg:p-6 space-y-3 sm:space-y-4'>
+      {messages?.map((message) => {
+        const isSent = message.sender.id === myId;
+        const hasFiles =
+          Array.isArray(message.files) && message.files.length > 0;
+
+        return (
+          <div
+            key={message.id}
+            className={`flex ${isSent ? "justify-end" : "justify-start"}`}
+          >
+            <div
+              className={`flex flex-col gap-1 max-w-[85%] sm:max-w-[75%] md:max-w-sm lg:max-w-xs rounded-lg overflow-hidden ${
+                isSent
+                  ? "bg-[linear-gradient(to_right,#004A8F,#008290)] text-white rounded-br-none"
+                  : "bg-background text-foreground border border-[#008290] rounded-bl-none"
+              }`}
+            >
+              {/* File attachments */}
+              {hasFiles &&
+                message.files.map((fileObj, fi) => {
+                  // fileObj is { id, file, file_name?, file_type? }
+                  // AFTER
+                  const fileUrl: string =
+                    typeof fileObj === "string"
+                      ? fileObj
+                      : ((fileObj as ApiMessageFile).file ?? "");
+                  const fileName: string =
+                    typeof fileObj === "string"
+                      ? (fileUrl.split("/").pop() ?? "")
+                      : ((fileObj as ApiMessageFile).file_name ??
+                        fileUrl.split("/").pop() ??
+                        "");
+                  const ext = fileUrl.split(".").pop()?.toLowerCase() ?? "";
+                  const isImage = [
+                    "jpg",
+                    "jpeg",
+                    "png",
+                    "gif",
+                    "webp",
+                  ].includes(ext);
+
+                  // ✅ Use absolute URL directly; fall back to getImageUrl only for relative paths
+                  const fullUrl =
+                    fileUrl.startsWith("http://") ||
+                    fileUrl.startsWith("https://")
+                      ? fileUrl
+                      : getImageUrl(fileUrl);
+
+                  return isImage ? (
+                    <a
+                      key={fi}
+                      href={fullUrl}
+                      target='_blank'
+                      rel='noopener noreferrer'
+                    >
+                      <img
+                        src={fullUrl}
+                        alt='attachment'
+                        className='w-full max-w-xs object-cover rounded-t-lg'
+                      />
+                    </a>
+                  ) : (
+                    <a
+                      key={fi}
+                      href={fullUrl}
+                      target='_blank'
+                      rel='noopener noreferrer'
+                      className={`flex items-center gap-2 px-3 sm:px-4 py-3 ${
+                        isSent ? "hover:bg-blue-700" : "hover:bg-muted"
+                      } transition-colors`}
+                    >
+                      <div className='h-9 w-9 rounded bg-white/20 flex items-center justify-center shrink-0'>
+                        <span className='text-xs font-bold uppercase'>
+                          {ext}
+                        </span>
+                      </div>
+                      <p className='text-xs truncate'>{fileName}</p>
+                    </a>
+                  );
+                })}
+
+              {/* Text */}
+              {message.text && (
+                <div className='px-3 sm:px-4 py-2'>
+                  <p className='text-sm leading-relaxed'>{message.text}</p>
+                </div>
+              )}
+
+              {/* Timestamp + status */}
+              <div
+                className={`px-2 pb-1.5 flex ${isSent ? "justify-end" : "justify-start"}`}
+              >
+                <p
+                  className={`text-xs ${
+                    isSent ? "text-blue-100" : "text-muted-foreground"
+                  }`}
+                >
+                  {new Date(message.created_at).toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                  {isSent && (
+                    <span className='ml-1'>
+                      {message.status === "seen" ? "✓✓" : "✓"}
+                    </span>
+                  )}
+                </p>
+              </div>
             </div>
           </div>
+        );
+      })}
+      <div ref={messagesEndRef} />
+    </div>
+  );
 
-          {/* Conversations */}
-          <div className='flex-1 overflow-y-auto'>
-            {messages.map((msg) => (
-              <button
-                key={msg.id}
-                onClick={() => handleSelectConversation(msg)}
-                className={`w-full flex items-center gap-3 px-5 py-4 text-left border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer ${
-                  selectedConversation?.id === msg.id ? "bg-[#F0FDFD]" : ""
-                }`}
-              >
-                {/* Avatar */}
-                <div className='w-10 h-10 rounded-full overflow-hidden shrink-0'>
-                  <img
-                    src='/images/salon-listing.png'
-                    alt={msg.senderName}
-                    className='w-full h-full object-cover'
-                  />
-                </div>
+  // ── Render ───────────────────────────────────────────────────────────────
 
-                {/* Content */}
-                <div className='min-w-0 flex-1'>
-                  <p className='text-sm font-semibold text-gray-800 truncate'>
-                    {msg.senderName}
-                  </p>
-                  <p className='text-xs text-gray-500 truncate mt-0.5 leading-relaxed'>
-                    {msg.lastMessage}
-                  </p>
-                  <div className='flex items-center gap-1 mt-1 text-[10px] text-gray-400'>
-                    <svg
-                      xmlns='http://www.w3.org/2000/svg'
-                      className='w-3 h-3'
-                      fill='none'
-                      viewBox='0 0 24 24'
-                      stroke='currentColor'
-                      strokeWidth={2}
-                    >
-                      <path
-                        strokeLinecap='round'
-                        strokeLinejoin='round'
-                        d='M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z'
-                      />
-                    </svg>
-                    {msg.timestamp}
-                  </div>
-                </div>
-
-                {/* Unread badge logic omitted to match design exact or kept simple */}
-              </button>
-            ))}
+  return (
+    <div className='h-dvh sm:h-[85vh] md:h-[80vh] bg-background flex overflow-hidden'>
+      {/* Sidebar */}
+      <div
+        className={`
+          flex-col bg-background
+          w-full md:w-72 lg:w-96 md:shrink-0 shadow-2xl pr-2
+          ${isConversationSelected ? "hidden md:flex" : "flex"}
+        `}
+      >
+        {/* Search */}
+        <div className='p-3 sm:p-4 border-b border-[#0074BE] shrink-0'>
+          <div className='relative'>
+            <SearchIcon className='absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground' />
+            <Input
+              placeholder='Search messages...'
+              className='pl-10 rounded-lg h-10 text-sm'
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
           </div>
         </div>
 
-        {/* Chat Area */}
-        <div
-          className={`flex-1 flex flex-col bg-[#F8F9FA] ${
-            showConversationList ? "hidden md:flex" : "flex"
-          }`}
-        >
-          {selectedConversation ? (
-            <>
-              {/* Chat Header */}
-              <div className='flex items-center justify-between px-5 py-4 bg-[#F8F9FA]'>
-                <div className='flex items-center gap-3'>
-                  {/* Back button (mobile) */}
-                  <button
-                    onClick={() => setShowConversationList(true)}
-                    className='md:hidden p-1.5 rounded-lg hover:bg-gray-200 transition-colors cursor-pointer'
-                    aria-label='Back to messages'
-                  >
-                    <svg
-                      xmlns='http://www.w3.org/2000/svg'
-                      className='w-5 h-5 text-gray-600'
-                      fill='none'
-                      viewBox='0 0 24 24'
-                      stroke='currentColor'
-                      strokeWidth={2}
-                    >
-                      <path
-                        strokeLinecap='round'
-                        strokeLinejoin='round'
-                        d='M10 19l-7-7m0 0l7-7m-7 7h18'
-                      />
-                    </svg>
-                  </button>
+        {/* Conversations */}
+        <div className='flex-1 overflow-y-auto'>
+          {conversationsFetching ? (
+            <ConversationSkeleton />
+          ) : conversations.length > 0 ? (
+            <div className='space-y-2 mt-2'>
+              {conversations.map((conv) => {
+                const other = getOtherParticipant(conv.participants, myId);
+                const isActive = selectedConversationId === conv.id;
+                const lastMsg = conv.last_message;
 
-                  <div className='w-9 h-9 rounded-md overflow-hidden shrink-0'>
-                    <img
-                      src='/images/salon-listing.png'
-                      alt={selectedConversation.senderName}
-                      className='w-full h-full object-cover'
-                    />
-                  </div>
-                  <p className='text-sm font-semibold text-gray-800'>
-                    {selectedConversation.senderName}
-                  </p>
-                </div>
-                <button className='p-2 text-gray-400 hover:text-gray-600'>
-                  <svg
-                    xmlns='http://www.w3.org/2000/svg'
-                    className='w-5 h-5'
-                    fill='none'
-                    viewBox='0 0 24 24'
-                    stroke='currentColor'
-                    strokeWidth={2}
-                  >
-                    <path
-                      strokeLinecap='round'
-                      strokeLinejoin='round'
-                      d='M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z'
-                    />
-                  </svg>
-                </button>
-              </div>
-
-              {/* Messages */}
-              <div className='flex-1 overflow-y-auto p-5 space-y-6'>
-                {chatMessages.map((chat) => (
+                return (
                   <div
-                    key={chat.id}
-                    className={`flex flex-col ${chat.isOwn ? "items-end" : "items-start"}`}
+                    key={conv.id}
+                    onClick={() => handleSelectConversation(conv)}
+                    className={`p-3 sm:p-4 cursor-pointer transition-colors rounded-sm border border-[#0074BE] ${
+                      isActive
+                        ? "bg-blue-50 border-l-4 border-l-blue-600"
+                        : "bg-background hover:bg-muted"
+                    }`}
                   >
-                    <div
-                      className={`max-w-[75%] px-5 py-3 rounded-[20px] text-sm whitespace-pre-line ${
-                        chat.isOwn
-                          ? "bg-[#2BBFBF] text-white rounded-tr-none"
-                          : "bg-white text-gray-600 rounded-tl-none shadow-sm"
-                      }`}
-                    >
-                      {chat.content}
-                    </div>
-                    <span className='text-[10px] text-gray-400 mt-1'>
-                      {chat.timestamp}
-                    </span>
-                  </div>
-                ))}
-              </div>
-
-              {/* Input */}
-              <div className='px-5 py-4 bg-white border-t border-gray-100'>
-                <div className='flex items-center gap-3'>
-                  <div className='flex-1 relative'>
-                    <input
-                      type='text'
-                      value={newMessage}
-                      onChange={(e) => setNewMessage(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && handleSend()}
-                      placeholder='Type your message here ...'
-                      className='w-full h-12 pl-4 pr-12 rounded-lg bg-[#F8F9FA] text-sm outline-none focus:ring-1 focus:ring-[#2BBFBF] transition-colors placeholder:text-gray-400'
-                    />
-                    <button
-                      onClick={handleSend}
-                      className='absolute right-2 top-1/2 -translate-y-1/2 flex items-center justify-center w-8 h-8 rounded-full bg-[#4A6BFF] hover:bg-blue-600 text-white transition-colors shrink-0 cursor-pointer'
-                      aria-label='Send message'
-                    >
-                      <svg
-                        xmlns='http://www.w3.org/2000/svg'
-                        className='w-4 h-4'
-                        fill='none'
-                        viewBox='0 0 24 24'
-                        stroke='currentColor'
-                        strokeWidth={2}
-                      >
-                        <path
-                          strokeLinecap='round'
-                          strokeLinejoin='round'
-                          d='M12 4v16m8-8H4'
+                    <div className='flex items-start gap-2.5 sm:gap-3'>
+                      {/* Avatar */}
+                      <div className='relative shrink-0'>
+                        <img
+                          src={getImageUrl(other.image)}
+                          alt={other.full_name || "avatar"}
+                          width={48}
+                          height={48}
+                          className='h-10 w-10 sm:h-12 sm:w-12 rounded-full object-cover'
                         />
-                      </svg>
-                    </button>
+                        <div className='absolute bottom-0 right-0 h-2.5 w-2.5 sm:h-3 sm:w-3 bg-green-500 rounded-full border-2 border-background' />
+                      </div>
+
+                      <div className='flex-1 min-w-0'>
+                        <div className='flex items-center justify-between gap-2'>
+                          <h3 className='font-semibold text-foreground text-sm truncate'>
+                            {other.full_name}
+                          </h3>
+                          {lastMsg && (
+                            <span className='text-xs text-muted-foreground shrink-0'>
+                              {new Date(lastMsg.created_at).toLocaleTimeString(
+                                [],
+                                {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                },
+                              )}
+                            </span>
+                          )}
+                        </div>
+
+                        <p className='text-xs text-muted-foreground mt-0.5 truncate'>
+                          {lastMsg
+                            ? lastMsg.files.length > 0
+                              ? "📎 File"
+                              : lastMsg.text
+                            : "No messages yet"}
+                        </p>
+                      </div>
+
+                      {/* Unread dot */}
+                      {lastMsg?.status === "sent" && (
+                        <div className='bg-[#2563EB] text-white text-xs font-semibold rounded-full h-5 w-5 sm:h-6 sm:w-6 flex items-center justify-center shrink-0'>
+                          •
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              </div>
-            </>
+                );
+              })}
+            </div>
           ) : (
-            <div className='flex-1 flex items-center justify-center'>
-              <div className='text-center'>
-                <svg
-                  xmlns='http://www.w3.org/2000/svg'
-                  className='w-16 h-16 mx-auto text-gray-300 mb-3'
-                  fill='none'
-                  viewBox='0 0 24 24'
-                  stroke='currentColor'
-                  strokeWidth={1}
-                >
-                  <path
-                    strokeLinecap='round'
-                    strokeLinejoin='round'
-                    d='M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z'
-                  />
-                </svg>
-                <p className='text-gray-400 text-sm'>
-                  Select a conversation to start messaging
-                </p>
-              </div>
+            <div className='flex items-center justify-center h-64 text-muted-foreground'>
+              <p className='text-sm'>No conversations found</p>
             </div>
           )}
         </div>
       </div>
+
+      {/* Chat Panel */}
+      <div
+        className={`
+          flex-col flex-1 bg-muted/30 min-w-0
+          ${isConversationSelected ? "flex" : "hidden md:flex"}
+        `}
+      >
+        {isConversationSelected && selectedConversation ? (
+          <>
+            {/* Header */}
+            <div className='border-b border-border bg-background px-3 sm:px-4 py-3 sm:py-4 flex items-center gap-2 sm:gap-3 shrink-0'>
+              <button
+                onClick={handleBack}
+                className='md:hidden text-blue-600 shrink-0 p-1 -ml-1'
+                aria-label='Back to conversations'
+              >
+                <ArrowLeft className='h-5 w-5' />
+              </button>
+
+              {otherParticipant && (
+                <>
+                  <div className='relative shrink-0'>
+                    <img
+                      src={getImageUrl(otherParticipant.image)}
+                      alt={otherParticipant.full_name || "avatar"}
+                      width={40}
+                      height={40}
+                      className='h-9 w-9 sm:h-10 sm:w-10 rounded-full object-cover'
+                    />
+                    <div className='absolute bottom-0 right-0 h-2.5 w-2.5 bg-green-500 rounded-full border border-background' />
+                  </div>
+
+                  <div className='flex-1 min-w-0'>
+                    <h2 className='font-semibold text-foreground truncate text-sm sm:text-base'>
+                      {otherParticipant.full_name}
+                    </h2>
+                    <p className='text-xs text-muted-foreground'>Active now</p>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {messagesFetching ? <MessagesSkeleton /> : MessageList}
+            {MessageInput}
+          </>
+        ) : (
+          <div className='flex items-center justify-center h-full text-muted-foreground'>
+            <p className='text-sm'>Select a conversation to start messaging</p>
+          </div>
+        )}
+      </div>
     </div>
+  );
+}
+
+export default function MessagingPage() {
+  return (
+    <WebSocketProvider>
+      <MessagingComponent />
+    </WebSocketProvider>
   );
 }
