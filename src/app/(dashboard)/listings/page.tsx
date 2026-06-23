@@ -10,7 +10,7 @@ import {
   useGetAllListingsQuery,
   useRejectListingMutation,
 } from "@/redux/features/listing/listingAPI";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 export interface ListingPhoto {
@@ -76,6 +76,10 @@ export default function SalonDashboard() {
   );
   const [page, setPage] = useState<number>(1);
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
+
+  // 1. State tracking the modal's current photo slider position
+  const [currentImgIndex, setCurrentImgIndex] = useState<number>(1);
+
   const page_size = 10;
   const { user } = useAuth();
 
@@ -90,6 +94,24 @@ export default function SalonDashboard() {
   const listings = data?.data || [];
   const meta = data?.meta;
   const totalPages = meta?.total_pages || 1;
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setSelectedListing(null);
+      }
+    };
+
+    // Only bind the event listener if a modal is actually open
+    if (selectedListing) {
+      window.addEventListener("keydown", handleKeyDown);
+    }
+
+    // Clean up the event listener when the component unmounts or modal closes
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [selectedListing]);
 
   const handleFilterChange = (
     newFilter: "pending" | "approved" | "rejected",
@@ -116,6 +138,29 @@ export default function SalonDashboard() {
     } catch (err) {
       console.error("Rejection failed", err);
     }
+  };
+
+  // 2. Custom wrapper to open modal & reset image counter index simultaneously
+  const handleSelectListing = (listing: Listing) => {
+    setSelectedListing(listing);
+    setCurrentImgIndex(0);
+  };
+
+  // 3. Navigation handlers
+  const handlePrevPhoto = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!selectedListing?.photos) return;
+    setCurrentImgIndex((prev) =>
+      prev === 0 ? selectedListing.photos.length - 1 : prev - 1,
+    );
+  };
+
+  const handleNextPhoto = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!selectedListing?.photos) return;
+    setCurrentImgIndex((prev) =>
+      prev === selectedListing.photos.length - 1 ? 0 : prev + 1,
+    );
   };
 
   const defaultPlaceholder =
@@ -190,7 +235,7 @@ export default function SalonDashboard() {
             return (
               <div
                 key={listing.id}
-                onClick={() => setSelectedListing(listing)}
+                onClick={() => handleSelectListing(listing)}
                 className='bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer border border-gray-100'
               >
                 <div className='relative aspect-4/3 bg-gray-100'>
@@ -228,7 +273,7 @@ export default function SalonDashboard() {
         </div>
       </div>
 
-      {/* 4. Complete Responsive Pagination Control Elements */}
+      {/* Complete Responsive Pagination Control Elements */}
       {!isLoading && listings.length > 0 && totalPages > 1 && (
         <div className='mt-10 flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3.5 sm:px-6 rounded-2xl shadow-xs'>
           {/* Mobile view action frames */}
@@ -316,22 +361,51 @@ export default function SalonDashboard() {
       {/* Interactive Verification Detail Modal overlay */}
       {selectedListing && (
         <div className='fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto'>
-          <div className='bg-white rounded-3xl max-w-md w-full overflow-hidden shadow-xl transform transition-all animate-in fade-in-50 zoom-in-95 duration-200'>
+          <div className='relative bg-white rounded-3xl max-w-md w-full overflow-hidden shadow-xl transform transition-all animate-in fade-in-50 zoom-in-95 duration-200'>
+            {/* Modal Photo Frame Container */}
             <div className='relative aspect-4/3 bg-gray-200'>
               <img
                 src={
                   selectedListing.photos && selectedListing.photos.length > 0
-                    ? getImageURL(selectedListing.photos[0].url)
+                    ? getImageURL(selectedListing.photos[currentImgIndex]?.url)
                     : defaultPlaceholder
                 }
-                alt={selectedListing.listing_title}
+                alt={`${selectedListing.listing_title} ${currentImgIndex + 1}`}
                 className='w-full h-full object-cover'
               />
-              <div className='absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 bg-black/20 px-3 py-1.5 rounded-full backdrop-blur-xs'>
-                <div className='w-2 h-2 rounded-full bg-white'></div>
-                <div className='w-2 h-2 rounded-full bg-white/50'></div>
-                <div className='w-2 h-2 rounded-full bg-white/50'></div>
-              </div>
+
+              {/* Only render action elements if there are multiple pictures */}
+              {selectedListing.photos && selectedListing.photos.length > 1 && (
+                <div className='absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-3 bg-black/50 px-4 py-1.5 rounded-full backdrop-blur-md select-none'>
+                  <button
+                    onClick={handlePrevPhoto}
+                    className='text-xs font-semibold text-white/80 hover:text-white transition-colors cursor-pointer'
+                  >
+                    Prev
+                  </button>
+
+                  {/* Visual tracker dots counter framework */}
+                  <div className='flex gap-1'>
+                    {selectedListing.photos.map((_, index) => (
+                      <div
+                        key={index}
+                        className={`w-1.5 h-1.5 rounded-full transition-all ${
+                          index === currentImgIndex
+                            ? "bg-[#13ADBB] scale-110"
+                            : "bg-white/40"
+                        }`}
+                      />
+                    ))}
+                  </div>
+
+                  <button
+                    onClick={handleNextPhoto}
+                    className='text-xs font-semibold text-white/80 hover:text-white transition-colors cursor-pointer'
+                  >
+                    Next
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Modal Content */}
@@ -416,20 +490,33 @@ export default function SalonDashboard() {
             </div>
 
             {/* Sticky Modal Action Buttons footer */}
-            <div className='p-4 bg-gray-50 border-t border-gray-100 flex gap-3'>
-              <button
-                onClick={() => handleReject(selectedListing.id)}
-                className='flex-1 py-3 px-4 bg-[#e5e7eb] hover:bg-gray-300 text-gray-700 font-semibold rounded-xl text-sm transition-colors'
-              >
-                Decline
-              </button>
-              <button
-                onClick={() => handleApprove(selectedListing.id)}
-                className='flex-1 py-3 px-4 bg-[#159a9c] hover:bg-[#0f7c7e] text-white font-semibold rounded-xl text-sm transition-colors shadow-sm'
-              >
-                Approve
-              </button>
-            </div>
+            {filter === "pending" && (
+              <div className='p-4 bg-gray-50 border-t border-gray-100 flex gap-3'>
+                <button
+                  onClick={() => handleReject(selectedListing.id)}
+                  className='flex-1 py-3 px-4 bg-[#e5e7eb] hover:bg-gray-300 text-gray-700 font-semibold rounded-xl text-sm transition-colors'
+                >
+                  Decline
+                </button>
+                <button
+                  onClick={() => handleApprove(selectedListing.id)}
+                  className='flex-1 py-3 px-4 bg-[#159a9c] hover:bg-[#0f7c7e] text-white font-semibold rounded-xl text-sm transition-colors shadow-sm'
+                >
+                  Approve
+                </button>
+              </div>
+            )}
+
+            {filter === "rejected" && (
+              <div className='p-4 bg-gray-50 border-t border-gray-100 flex gap-3'>
+                <button
+                  onClick={() => handleApprove(selectedListing.id)}
+                  className='flex-1 py-3 px-4 bg-[#159a9c] hover:bg-[#0f7c7e] text-white font-semibold rounded-xl text-sm transition-colors shadow-sm'
+                >
+                  Withdraw Rejection
+                </button>
+              </div>
+            )}
 
             <button
               onClick={() => setSelectedListing(null)}
