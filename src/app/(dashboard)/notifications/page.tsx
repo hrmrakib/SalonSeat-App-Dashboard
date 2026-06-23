@@ -3,9 +3,21 @@
 import React from "react";
 import Link from "next/link";
 import NotificationItem from "@/components/ui/NotificationItem";
-import { notifications } from "@/lib/data";
+import { useGetNotificationsQuery } from "@/redux/features/notifications/notificationAPI";
+
+export interface Notification {
+  id: number;
+  title: string;
+  content: string;
+  note_type: "success" | "payment" | "info" | string;
+}
 
 export default function NotificationsPage() {
+  const { data, isLoading } = useGetNotificationsQuery(undefined);
+
+  // Safely extract notifications array from API response payload
+  const activeNotifications = data?.data || [];
+
   return (
     <div className='bg-white rounded-xl border border-border-light overflow-hidden fade-in'>
       {/* Header */}
@@ -35,11 +47,21 @@ export default function NotificationsPage() {
 
       {/* Notification List */}
       <div className='p-4 space-y-2'>
-        {notifications.map((notification) => (
-          <NotificationItem key={notification.id} notification={notification} />
-        ))}
+        {isLoading && (
+          <p className='text-center py-6 text-sm text-text-muted'>
+            Loading notifications...
+          </p>
+        )}
 
-        {notifications.length === 0 && (
+        {!isLoading &&
+          activeNotifications.map((notification: Notification) => (
+            <NotificationItem
+              key={notification.id}
+              notification={notification}
+            />
+          ))}
+
+        {!isLoading && activeNotifications.length === 0 && (
           <div className='py-12 text-center'>
             <svg
               xmlns='http://www.w3.org/2000/svg'
