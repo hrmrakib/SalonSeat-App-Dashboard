@@ -6,6 +6,8 @@ import ConfirmModal from "../modal/LogoutModal";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
+import Image from "next/image";
+import { getImageURL } from "@/lib/getImageURL";
 
 interface HeaderProps {
   onMenuToggle: () => void;
@@ -17,6 +19,8 @@ export default function Header({ onMenuToggle }: HeaderProps) {
   const [logoutModalOpen, setLogoutModalOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
+
+  console.log({ user });
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -113,20 +117,33 @@ export default function Header({ onMenuToggle }: HeaderProps) {
               className='flex items-center gap-2 pl-2 pr-1 py-1 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer'
             >
               <div className='w-9 h-9 rounded-full bg-[#E8F8F8] overflow-hidden flex items-center justify-center'>
-                <svg
-                  xmlns='http://www.w3.org/2000/svg'
-                  className='w-6 h-6 text-[#2BBFBF]'
-                  fill='none'
-                  viewBox='0 0 24 24'
-                  stroke='currentColor'
-                  strokeWidth={1.5}
-                >
-                  <path
-                    strokeLinecap='round'
-                    strokeLinejoin='round'
-                    d='M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z'
+                {user?.image ? (
+                  <Image
+                    src={getImageURL(user.image)}
+                    alt={user.full_name}
+                    width={100}
+                    height={100}
+                    className='w-full h-full object-cover'
+                    sizes='(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw'
+                    priority
+                    unoptimized
                   />
-                </svg>
+                ) : (
+                  <svg
+                    xmlns='http://www.w3.org/2000/svg'
+                    className='w-6 h-6 text-[#2BBFBF]'
+                    fill='none'
+                    viewBox='0 0 24 24'
+                    stroke='currentColor'
+                    strokeWidth={1.5}
+                  >
+                    <path
+                      strokeLinecap='round'
+                      strokeLinejoin='round'
+                      d='M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z'
+                    />
+                  </svg>
+                )}
               </div>
               <span className='text-sm font-medium text-gray-800 hidden sm:block'>
                 {user?.full_name || ""}

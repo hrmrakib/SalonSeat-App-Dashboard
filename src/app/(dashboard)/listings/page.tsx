@@ -11,6 +11,7 @@ import {
   useRejectListingMutation,
 } from "@/redux/features/listing/listingAPI";
 import { useState } from "react";
+import { toast } from "sonner";
 
 export interface ListingPhoto {
   id: number;
@@ -101,6 +102,7 @@ export default function SalonDashboard() {
     try {
       await approveListing({ id, body: { is_admin_rejected: false } });
       setSelectedListing(null);
+      toast.success("Listing approved successfully");
     } catch (err) {
       console.error("Approval failed", err);
     }
@@ -110,6 +112,7 @@ export default function SalonDashboard() {
     try {
       await rejectListing({ id, body: { is_admin_rejected: true } });
       setSelectedListing(null);
+      toast.success("Listing rejected successfully");
     } catch (err) {
       console.error("Rejection failed", err);
     }

@@ -8,6 +8,7 @@ const listingAPI = baseAPI.injectEndpoints({
         method: "GET",
         params,
       }),
+      providesTags: ["Listings"],
     }),
 
     approvedListing: build.mutation({
@@ -16,6 +17,7 @@ const listingAPI = baseAPI.injectEndpoints({
         method: "PATCH",
         body,
       }),
+      invalidatesTags: ["Listings"],
     }),
 
     rejectListing: build.mutation({
@@ -24,6 +26,7 @@ const listingAPI = baseAPI.injectEndpoints({
         method: "PATCH",
         body,
       }),
+      invalidatesTags: ["Listings"],
     }),
 
     deleteListing: build.mutation({
@@ -31,6 +34,7 @@ const listingAPI = baseAPI.injectEndpoints({
         url: `/admin/listings/${id}/`,
         method: "DELETE",
       }),
+      invalidatesTags: ["Listings"],
     }),
   }),
 });
