@@ -6,6 +6,7 @@ import Image from "next/image";
 import { useState } from "react";
 import ConfirmModal from "../modal/LogoutModal";
 import { toast } from "sonner";
+import { logout } from "@/service/authService";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -152,14 +153,12 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   async function handleLogoutConfirm() {
     try {
-      // 2. Clear tokens/localstorage if you're managing them there
       localStorage.removeItem("access_token");
       sessionStorage.clear();
+      await logout();
 
-      // 3. Show a friendly success notification
       toast.success("Logged out successfully");
 
-      // 4. Redirect the admin back to the login screen
       router.push("/login");
     } catch (error) {
       console.error("Logout failed:", error);

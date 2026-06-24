@@ -8,6 +8,7 @@ import { Mail, KeyRound, Eye, EyeOff } from "lucide-react";
 import AuthLayout from "@/components/auth/AuthLayout";
 import { setUser } from "@/redux/features/auth/authSlice";
 import { useDispatch } from "react-redux";
+import { saveTokens } from "@/service/authService";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -53,6 +54,7 @@ export default function LoginPage() {
       }
 
       if (data.success) {
+        await saveTokens(data.access);
         localStorage.setItem("access_token", data.access);
         dispatch(
           setUser({
