@@ -20,8 +20,6 @@ export default function Header({ onMenuToggle }: HeaderProps) {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
 
-  console.log({ user });
-
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (

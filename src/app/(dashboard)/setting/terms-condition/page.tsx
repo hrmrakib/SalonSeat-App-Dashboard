@@ -21,9 +21,7 @@ export default function EditTermsTab() {
   const [content, setContent] = useState<string>("");
 
   const { data: aboutUsData, isLoading } = useGetCMSQuery({});
-  const terms = aboutUsData?.data?.terms_conditions;
-
-  console.log(aboutUsData?.data?.terms_conditions);
+  const terms = aboutUsData?.content?.terms_conditions;
 
   const [updateCMSMutation, { isLoading: isSaving }] = useUpdateCMSMutation();
 
@@ -44,9 +42,9 @@ export default function EditTermsTab() {
 
         quillRef.current = quill;
 
-        if (aboutUsData?.data?.terms_conditions) {
-          quill.root.innerHTML = aboutUsData?.data?.terms_conditions;
-          setContent(aboutUsData?.data?.terms_conditions);
+        if (aboutUsData?.content?.terms_conditions) {
+          quill.root.innerHTML = aboutUsData?.content?.terms_conditions;
+          setContent(aboutUsData?.content?.terms_conditions);
         }
 
         quill.on("text-change", () => {
@@ -62,7 +60,7 @@ export default function EditTermsTab() {
     return () => {
       initialized = true;
     };
-  }, [aboutUsData?.data?.terms_conditions]);
+  }, [aboutUsData?.content?.terms_conditions]);
 
   if (isLoading && !terms && !quillRef.current) return <div>Loading...</div>;
 
@@ -74,7 +72,7 @@ export default function EditTermsTab() {
 
     try {
       const res = await updateCMSMutation({
-        terms_conditionss: content,
+        terms_conditions: content,
       }).unwrap();
 
       if (res) {

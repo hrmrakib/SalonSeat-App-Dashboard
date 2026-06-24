@@ -52,9 +52,6 @@ export default function LoginPage() {
         );
       }
 
-      console.log(data);
-      console.log(data?.access);
-
       if (data.success) {
         localStorage.setItem("access_token", data.access);
         dispatch(
@@ -146,7 +143,7 @@ export default function LoginPage() {
         <button
           type='submit'
           disabled={loading}
-          className='w-full py-3 rounded-full bg-teal-500 hover:bg-teal-600 active:scale-[0.98] text-white text-sm font-semibold transition disabled:opacity-60'
+          className='w-full py-3 rounded-full bg-teal-500 hover:bg-teal-600 active:scale-[0.98] text-white text-sm font-semibold transition disabled:opacity-60 disabled:cursor-not-allowed'
         >
           {loading ? "Signing in..." : "Sign In"}
         </button>

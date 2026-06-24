@@ -21,9 +21,7 @@ export default function EditTermsTab() {
   const [content, setContent] = useState<string>("");
 
   const { data: aboutUsData, isLoading } = useGetCMSQuery({});
-  const terms = aboutUsData?.data?.privacy_policy;
-
-  console.log(aboutUsData?.data?.privacy_policy);
+  const terms = aboutUsData?.content?.privacy_policy;
 
   const [updateCMSMutation, { isLoading: isSaving }] = useUpdateCMSMutation();
 
@@ -44,9 +42,9 @@ export default function EditTermsTab() {
 
         quillRef.current = quill;
 
-        if (aboutUsData?.data?.privacy_policy) {
-          quill.root.innerHTML = aboutUsData?.data?.privacy_policy;
-          setContent(aboutUsData?.data?.privacy_policy);
+        if (aboutUsData?.content?.privacy_policy) {
+          quill.root.innerHTML = aboutUsData?.content?.privacy_policy;
+          setContent(aboutUsData?.content?.privacy_policy);
         }
 
         quill.on("text-change", () => {
@@ -62,7 +60,7 @@ export default function EditTermsTab() {
     return () => {
       initialized = true;
     };
-  }, [aboutUsData?.data?.privacy_policy]);
+  }, [aboutUsData?.content?.privacy_policy]);
 
   if (isLoading && !terms && !quillRef.current) return <div>Loading...</div>;
 
