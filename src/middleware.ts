@@ -11,7 +11,7 @@ export function middleware(request: NextRequest) {
                       pathname.startsWith('/verify-email');
                       
   // Define public routes that anyone can access
-  const isPublicRoute = pathname.startsWith('/privacy-policy');
+  const isPublicRoute = pathname.startsWith('/privacy-policy') || pathname.startsWith('/support');
 
   const token = request.cookies.get('token')?.value;
 
