@@ -19,9 +19,9 @@ export default function ContactForm() {
  
     if (serviceId === 'YOUR_SERVICE_ID') {
       toast.error('EmailJS is not configured. Please add your credentials in .env.');
-      setIsSubmitting(false);
+      setIsSubmitting(false); 
       return;
-    }
+    } 
 
     emailjs
       .sendForm(serviceId, templateId, form.current, {
