@@ -122,7 +122,7 @@ export default function SalonDashboard() {
 
   const handleApprove = async (id: number) => {
     try {
-      await approveListing({ id, body: { is_admin_rejected: false } });
+      await approveListing({ id, body: { is_admin_approved: true } });
       setSelectedListing(null);
       toast.success("Listing approved successfully");
     } catch (err) {
